@@ -3,25 +3,21 @@ package com.macauto.maptest;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.SearchManager;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
-import android.location.Criteria;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.MenuItemCompat;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
@@ -42,11 +38,15 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.macauto.maptest.Data.LocationPager;
+import com.macauto.maptest.Sql.Jdbc;
+
 
 import java.io.IOException;
-import java.text.DateFormat;
+
+
 import java.util.ArrayList;
-import java.util.Date;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -83,6 +83,13 @@ public class MapsActivity extends AppCompatActivity implements
 
     List<Marker> mMarkers = new ArrayList<>();
 
+    LocationPager adapter;
+    private ViewPager viewPager;
+
+    public static String[] rank;
+    public static String[] country;
+    public static String[] population;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,7 +104,23 @@ public class MapsActivity extends AppCompatActivity implements
             }
         }
 
+        rank = new String[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
 
+        country = new String[] { "China", "India", "United States",
+                "Indonesia", "Brazil", "Pakistan", "Nigeria", "Bangladesh",
+                "Russia", "Japan" };
+
+        population = new String[] { "1,354,040,000", "1,210,193,422",
+                "315,761,000", "237,641,326", "193,946,886", "182,912,000",
+                "170,901,000", "152,518,015", "143,369,806", "127,360,000" };
+
+        viewPager = (ViewPager) findViewById(R.id.view_pager);
+        adapter = new LocationPager(this);
+
+
+
+        viewPager.setAdapter(adapter);
+        //viewPager.setCurrentItem(index);
     }
 
     @Override
@@ -139,44 +162,36 @@ public class MapsActivity extends AppCompatActivity implements
         buildGoogleApiClient();
         try {
             mGoogleMap.setMyLocationEnabled(true);
+
+            mGoogleMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+                @Override
+                public boolean onMyLocationButtonClick() {
+
+                    Log.d(TAG, "onMyLocationButtonClick!");
+
+                    Location myLocation = getLastKnownLocation();
+
+                    if (myLocation != null) {
+                        double longitude = myLocation.getLongitude();
+                        double latitude = myLocation.getLatitude();
+                        Log.d(TAG, "longitude = "+longitude+" latitude = "+latitude);
+                    } else {
+                        Log.d(TAG, "location = null");
+                    }
+
+
+                    return false;
+                }
+            });
         } catch (SecurityException e) {
             e.printStackTrace();
         }
 
+        //testDB();
+        Jdbc jdbc = new Jdbc();
 
-
-        /*if (mGoogleMap != null) {
-            try {
-                mGoogleMap.setMyLocationEnabled(true);
-
-                mGoogleMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
-                    @Override
-                    public boolean onMyLocationButtonClick() {
-
-                        Log.d(TAG, "onMyLocationButtonClick!");
-
-                        Location myLocation = getLastKnownLocation();
-
-                        if (myLocation != null) {
-                            double longitude = myLocation.getLongitude();
-                            double latitude = myLocation.getLatitude();
-                            Log.d(TAG, "longitude = "+longitude+" latitude = "+latitude);
-                        } else {
-                            Log.d(TAG, "location = null");
-                        }
-
-
-                        return false;
-                    }
-                });
-
-            } catch (SecurityException e) {
-                e.printStackTrace();
-            }
-        }*/
-
-
-
+        jdbc.queryTable();
+        //jdbc.insertTable("Tainan Stadium", "0.0", "0.0", "0", "2", "2", "2", "0", "free");
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -484,4 +499,6 @@ public class MapsActivity extends AppCompatActivity implements
             return false;
         }
     };
+
+
 }
