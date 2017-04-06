@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.app.SearchManager;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -24,6 +25,9 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -90,6 +94,12 @@ public class MapsActivity extends AppCompatActivity implements
     public static String[] country;
     public static String[] population;
 
+    private static int currentPage;
+    private View viewDrawer;
+    private LinearLayout linearLayout;
+    private ImageView imageView;
+    private static boolean is_close = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,12 +125,56 @@ public class MapsActivity extends AppCompatActivity implements
                 "170,901,000", "152,518,015", "143,369,806", "127,360,000" };
 
         viewPager = (ViewPager) findViewById(R.id.view_pager);
+        viewDrawer = findViewById(R.id.view1);
+        linearLayout = (LinearLayout) findViewById(R.id.viewPagerLaylout);
+        imageView = (ImageView) findViewById(R.id.imgDraw);
+
+        viewDrawer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!is_close) {
+                    linearLayout.setVisibility(View.GONE);
+                    is_close = true;
+                    imageView.setImageResource(R.drawable.ic_expand_more_black_24dp);
+                } else {
+                    linearLayout.setVisibility(View.VISIBLE);
+                    is_close = false;
+                    imageView.setImageResource(R.drawable.ic_expand_less_black_24dp);
+                }
+            }
+        });
+
         adapter = new LocationPager(this);
 
 
 
         viewPager.setAdapter(adapter);
-        //viewPager.setCurrentItem(index);
+
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageSelected(int position) {
+                Log.i(TAG, "onPageSelected = "+position);
+                currentPage = position;
+            }
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                // not needed
+            }
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                if (state == ViewPager.SCROLL_STATE_IDLE) {
+                    int pageCount = rank.length+2;
+
+                    if (currentPage == pageCount-1){
+                        viewPager.setCurrentItem(1,false);
+                    } else if (currentPage == 0){
+                        viewPager.setCurrentItem(pageCount-2,false);
+                    }
+                }
+            }
+        });
+
+
     }
 
     @Override
@@ -426,6 +480,7 @@ public class MapsActivity extends AppCompatActivity implements
         searchView = (SearchView) MenuItemCompat.getActionView(searchMenuItem);
         searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
 
+        searchMenuItem.setVisible(false);
 
         try {
             //SearchView searchView = (SearchView) MenuItemCompat.getActionView(menu.findItem(R.id.action_search_keeper));
@@ -443,6 +498,10 @@ public class MapsActivity extends AppCompatActivity implements
         switch (item.getItemId()) {
             case R.id.action_search:
 
+                break;
+            case R.id.action_locate:
+                Intent intent = new Intent(MapsActivity.this, AddCourt.class);
+                startActivity(intent);
                 break;
             default:
                 break;
@@ -476,7 +535,7 @@ public class MapsActivity extends AppCompatActivity implements
                     e.printStackTrace();
                 }
 
-                if (addressList.size() > 0) {
+                if (addressList != null && addressList.size() > 0) {
                     Address address = addressList.get(0);
                     LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
 

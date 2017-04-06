@@ -160,8 +160,8 @@ public class Jdbc {
     }
 
 
-    public static void insertTable(final String name, final String longitude, final String latitude, final String type, final String court_num,
-                                   final String maintenance, final String rate, final String night_play, final String charge)
+    public static void insertTable(final String name, final String longitude, final String latitude, final String type, final String usage, final String court_num,
+                                   final String night_play, final String charge, final String maintenance, final String traffic, final String parking, final com.mysql.jdbc.Blob blob)
     {
         new Thread() {
             public void run() {
@@ -179,15 +179,19 @@ public class Jdbc {
                     try {
                         pst = con.prepareStatement(insertdbSQL);
 
-                        pst.setString(1, name);
+                        pst.setString(1, name); //court name
                         pst.setString(2, longitude);
                         pst.setString(3, latitude);
-                        pst.setString(4, type);
-                        pst.setString(5, court_num);
-                        pst.setString(6, maintenance);
-                        pst.setString(7, rate);
-                        pst.setString(8, night_play);
-                        pst.setString(9, charge);
+                        pst.setString(4, type); //hard, grass, clay
+                        pst.setString(5, usage); //boolean
+                        pst.setString(6, court_num); //int
+                        pst.setString(7, night_play); //boolean
+                        pst.setString(8, charge); //string
+                        pst.setString(9, maintenance); //
+                        pst.setString(10, traffic);
+                        pst.setString(11, parking);
+                        pst.setBlob(12, blob);
+
                         pst.executeUpdate();
 
                     } catch (SQLException e) {

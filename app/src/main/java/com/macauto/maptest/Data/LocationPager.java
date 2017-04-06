@@ -3,6 +3,7 @@ package com.macauto.maptest.Data;
 import android.content.Context;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,7 +29,7 @@ public class LocationPager extends PagerAdapter {
 
     @Override
     public int getCount() {
-        return 0;
+        return rank.length+2;
     }
 
 
@@ -47,6 +48,8 @@ public class LocationPager extends PagerAdapter {
         TextView textViewMaintain;
 
 
+        Log.i(TAG, "get position = "+position);
+
         inflater = (LayoutInflater) context
                 .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View itemView = inflater.inflate(R.layout.viewpager_item, container,
@@ -58,9 +61,25 @@ public class LocationPager extends PagerAdapter {
         textViewMaintain = (TextView) itemView.findViewById(R.id.textView3);
 
         // Capture position and set to the TextViews
-        textViewName.setText(rank[position]);
-        textViewCharge.setText(country[position]);
-        textViewMaintain.setText(population[position]);
+
+        if (position == getCount() - 1) {
+            Log.d(TAG, "<last>");
+            textViewName.setText(rank[0]);
+            textViewCharge.setText(country[0]);
+            textViewMaintain.setText(population[0]);
+        } else if (position == 0) {
+            Log.d(TAG, "<first>");
+            textViewName.setText(rank[rank.length-1]);
+            textViewCharge.setText(country[country.length-1]);
+            textViewMaintain.setText(population[population.length-1]);
+        } else {
+            Log.d(TAG, "<normal>");
+            textViewName.setText(rank[position-1]);
+            textViewCharge.setText(country[position-1]);
+            textViewMaintain.setText(population[position-1]);
+        }
+
+
 
         // Locate the ImageView in viewpager_item.xml
         //imgPic = (ImageView) itemView.findViewById(R.id.flag);
