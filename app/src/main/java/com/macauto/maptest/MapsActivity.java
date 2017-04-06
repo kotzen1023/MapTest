@@ -346,18 +346,20 @@ public class MapsActivity extends AppCompatActivity implements
         //        android.Manifest.permission.WRITE_CALENDAR);
         int locationPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
 
-        //int cameraPermission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
+        int writePermission = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        int cameraPermission = ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA);
 
         List<String> listPermissionsNeeded = new ArrayList<>();
         if (locationPermission != PackageManager.PERMISSION_GRANTED) {
             listPermissionsNeeded.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
         }
-        //if (permissionSendMessage != PackageManager.PERMISSION_GRANTED) {
-        //    listPermissionsNeeded.add(android.Manifest.permission.WRITE_CALENDAR);
-        //}
-        //if (cameraPermission != PackageManager.PERMISSION_GRANTED) {
-        //    listPermissionsNeeded.add(android.Manifest.permission.CAMERA);
-        //}
+        if (writePermission != PackageManager.PERMISSION_GRANTED) {
+            listPermissionsNeeded.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        if (cameraPermission != PackageManager.PERMISSION_GRANTED) {
+            listPermissionsNeeded.add(android.Manifest.permission.CAMERA);
+        }
 
         if (!listPermissionsNeeded.isEmpty()) {
             ActivityCompat.requestPermissions(this, listPermissionsNeeded.toArray(new String[listPermissionsNeeded.size()]),REQUEST_ID_MULTIPLE_PERMISSIONS);
@@ -403,19 +405,19 @@ public class MapsActivity extends AppCompatActivity implements
 
                 Map<String, Integer> perms = new HashMap<>();
                 // Initialize the map with both permissions
-                //perms.put(android.Manifest.permission.WRITE_CALENDAR, PackageManager.PERMISSION_GRANTED);
+                perms.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, PackageManager.PERMISSION_GRANTED);
                 perms.put(android.Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-                //perms.put(android.Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
+                perms.put(android.Manifest.permission.CAMERA, PackageManager.PERMISSION_GRANTED);
                 // Fill with actual results from user
                 if (grantResults.length > 0) {
                     for (int i = 0; i < permissions.length; i++)
                         perms.put(permissions[i], grantResults[i]);
                     // Check for both permissions
-                    if (//perms.get(android.Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED &&
-                            perms.get(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED )
-                    //&& perms.get(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+                    if (perms.get(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+                            perms.get(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    && perms.get(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                     {
-                        Log.d(TAG, "write permission granted");
+                        Log.d(TAG, "all permission granted");
                         init_mapFragment();
 
 
