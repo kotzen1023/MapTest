@@ -27,8 +27,8 @@ public class Jdbc {
     private static Connection con = null;
     private static  PreparedStatement pst = null;
 
-    private static String insertdbSQL = "insert into court(name, longitude ,latitude, type, court_num, maintenance, rate, night_play, charge) " +
-            "values(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    private static String insertdbSQL = "insert into court(name, longitude ,latitude, type, court_usage, light, court_num, charge, maintenance, traffic, parking, pic) " +
+            "values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static String querydbSQL = "select * from court ";
 
@@ -132,8 +132,17 @@ public class Jdbc {
                         //name, longitude ,latitude, type, court_num, maintenance, rate, night_play, charge
                         while(rs.next())
                         {
-                            Log.d(TAG, ""+rs.getString("name")+", "+rs.getDouble("longitude")+", "+rs.getDouble("latitude")+", "+rs.getInt("type")+", "+
-                            rs.getInt("court_num")+", "+rs.getInt("maintenance")+", "+rs.getInt("rate")+", "+rs.getInt("night_play")+", "+rs.getString("charge"));
+                            Log.d(TAG, ""+rs.getString("name")+", "+
+                                    rs.getDouble("longitude")+", "+
+                                    rs.getDouble("latitude")+", "+
+                                    rs.getInt("type")+", "+
+                                    rs.getInt("court_usage")+", "+
+                                    rs.getInt("light")+", "+
+                                    rs.getInt("court_num")+", "+
+                                    rs.getInt("charge")+", "+
+                                    rs.getString("maintenance")+", "+
+                                    rs.getInt("traffic")+", "+
+                                    rs.getInt("parking"));
 
                         }
                         Log.d(TAG, "=== Data Read ===");
@@ -161,7 +170,7 @@ public class Jdbc {
 
 
     public static void insertTable(final String name, final String longitude, final String latitude, final String type, final String usage, final String court_num,
-                                   final String night_play, final String charge, final String maintenance, final String traffic, final String parking, final com.mysql.jdbc.Blob blob)
+                                   final String night_play, final String charge, final String maintenance, final String traffic, final String parking, final byte[] blob)
     {
         new Thread() {
             public void run() {
@@ -190,7 +199,7 @@ public class Jdbc {
                         pst.setString(9, maintenance); //
                         pst.setString(10, traffic);
                         pst.setString(11, parking);
-                        pst.setBlob(12, blob);
+                        pst.setBytes(12, blob);
 
                         pst.executeUpdate();
 

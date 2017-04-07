@@ -28,6 +28,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.macauto.maptest.Data.FileOperation;
+import com.macauto.maptest.Sql.Jdbc;
+import com.mysql.jdbc.Blob;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.text.DecimalFormat;
@@ -62,11 +66,20 @@ public class AddCourt extends AppCompatActivity {
     private final int PICK_FROM_FILE = 800;
     //private static Uri mImageCaptureUri;
     private static String picFromCamera;
+    private static ByteArrayOutputStream stream;
+    private static Bitmap resized = null;
+    //private static Blob blob;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.add_court);
+
+        Intent intent = getIntent();
+        final double longitude = intent.getDoubleExtra("longitude", 0.0);
+        final double latitude = intent.getDoubleExtra("latitude", 0.0);
+
+        Log.d(TAG, "longitude = "+longitude+", latitude = "+latitude);
 
         context = getBaseContext();
 
@@ -98,7 +111,7 @@ public class AddCourt extends AppCompatActivity {
         imageView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final String [] items        = new String [] {//"Camera",
+                final String [] items        = new String [] {"Camera",
                         "Gallery",
                         "Remove"};
                 ArrayAdapter<String> adapter = new ArrayAdapter<> (AddCourt.this, android.R.layout.select_dialog_item,items);
@@ -108,7 +121,7 @@ public class AddCourt extends AppCompatActivity {
                 builder.setTitle("Select:");
                 builder.setAdapter( adapter, new DialogInterface.OnClickListener() {
                     public void onClick( DialogInterface dialog, int item ) { //pick from camer
-                        /*if (item == 0) {
+                        if (item == 0) {
                             if (FileOperation.init_camera_folder()) {
 
                                 Calendar c = Calendar.getInstance();
@@ -136,8 +149,8 @@ public class AddCourt extends AppCompatActivity {
                                 picIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, outputFileUri);
                                 startActivityForResult(picIntent, PICK_FROM_CAMERA);
                             }
-                        } else */
-                        if (item == 0) { //pick from file
+                        } else
+                        if (item == 1) { //pick from file
                             /*if (Build.VERSION.SDK_INT <19){
                                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                                 intent.setType("image/*");
@@ -174,7 +187,43 @@ public class AddCourt extends AppCompatActivity {
         btnConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (editTextCourtName.getText().toString().equals("")) {
+                    toast("Name can not be null!");
+                } else if (editTextCourtNum.equals("")) {
+                    toast("Court number can not be null!");
+                } else if (editTextCharge.equals("")) {
+                    toast("Charge can not be null!");
+                } else if (resized == null) {
+                    toast("Please add a pic of court!");
+                } else {
+                    Log.d(TAG, "court name = "+editTextCourtName.getText().toString());
+                    Log.d(TAG, "longitude = "+longitude);
+                    Log.d(TAG, "latitude = "+latitude);
+                    Log.d(TAG, "type = "+courtTypeSpinner.getSelectedItemPosition());
+                    Log.d(TAG, "usage = "+courtUsageSpinner.getSelectedItemPosition());
+                    Log.d(TAG, "light = "+lightSpinner.getSelectedItemPosition());
+                    Log.d(TAG, "courts = "+editTextCourtNum.getText().toString());
+                    Log.d(TAG, "charge = "+editTextCharge.getText().toString());
+                    Log.d(TAG, "maintenance = "+ratingBarMaintenance.getRating());
+                    Log.d(TAG, "traffic = "+ratingBarTraffic.getRating());
+                    Log.d(TAG, "parking = "+ratingBarParking.getRating());
 
+                    //Jdbc jdbc = new Jdbc();
+                    Jdbc.insertTable(editTextCourtName.getText().toString(),
+                                    String.valueOf(longitude),
+                                    String.valueOf(latitude),
+                                    String.valueOf(courtTypeSpinner.getSelectedItemPosition()),
+                                    String.valueOf(courtUsageSpinner.getSelectedItemPosition()),
+                                    String.valueOf(lightSpinner.getSelectedItemPosition()),
+                                    editTextCourtNum.getText().toString(),
+                                    editTextCharge.getText().toString(),
+                                    String.valueOf(ratingBarMaintenance.getRating()),
+                                    String.valueOf(ratingBarTraffic.getRating()),
+                                    String.valueOf(ratingBarParking.getRating()),
+                                    stream.toByteArray()
+                            );
+
+                }
             }
         });
     }
@@ -294,10 +343,12 @@ public class AddCourt extends AppCompatActivity {
                                 new_width = 512;
                                 new_height = 512;
                             }
-                            Bitmap resized = Bitmap.createScaledBitmap(bmImg, new_width, new_height, true);
-                            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                            resized = Bitmap.createScaledBitmap(bmImg, new_width, new_height, true);
+                            stream = new ByteArrayOutputStream();
                             resized.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                             imageView.setImageBitmap(resized);
+
+
                             //byte[] byteArray = stream.toByteArray();
                             //Connection.myCard.setAvatar(byteArray);
                             //Connection.saveMyInfo();
@@ -336,7 +387,7 @@ public class AddCourt extends AppCompatActivity {
                     toast("Cancelled");
                 }
                 break;
-            /*case PICK_FROM_CAMERA:
+            case PICK_FROM_CAMERA:
                 Log.e(TAG, "PICK_FROM_CAMERA");
                 if (resultCode == Activity.RESULT_OK) {
 
@@ -357,13 +408,14 @@ public class AddCourt extends AppCompatActivity {
                             new_width = 512;
                             new_height = 512;
                         }
-                        Bitmap resized = Bitmap.createScaledBitmap(bmImg, new_width, new_height, true);
-                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                        resized = Bitmap.createScaledBitmap(bmImg, new_width, new_height, true);
+                        stream = new ByteArrayOutputStream();
                         resized.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                        byte[] byteArray = stream.toByteArray();
-                        Connection.myCard.setAvatar(byteArray);
-                        Connection.saveMyInfo();
-                        Connection.reloadMyVCard = true;
+                        imageView.setImageBitmap(resized);
+                        //byte[] byteArray = stream.toByteArray();
+                        //Connection.myCard.setAvatar(byteArray);
+                        //Connection.saveMyInfo();
+                        //Connection.reloadMyVCard = true;
 
 
                     } else if (data.getExtras() == null) {
@@ -375,7 +427,7 @@ public class AddCourt extends AppCompatActivity {
                 } else if (resultCode == Activity.RESULT_CANCELED) {
                     toast("Cancelled");
                 }
-                break;*/
+                break;
         }
     }
 

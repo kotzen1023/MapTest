@@ -100,6 +100,9 @@ public class MapsActivity extends AppCompatActivity implements
     private ImageView imageView;
     private static boolean is_close = false;
 
+    private static double longitude = 0.0;
+    private static double latitude = 0.0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -217,7 +220,17 @@ public class MapsActivity extends AppCompatActivity implements
         try {
             mGoogleMap.setMyLocationEnabled(true);
 
-            mGoogleMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+            Location myLocation = getLastKnownLocation();
+
+            if (myLocation != null) {
+                longitude = myLocation.getLongitude();
+                latitude = myLocation.getLatitude();
+                Log.d(TAG, "longitude = "+longitude+" latitude = "+latitude);
+            } else {
+                Log.d(TAG, "location = null");
+            }
+
+            /*mGoogleMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
                 @Override
                 public boolean onMyLocationButtonClick() {
 
@@ -236,7 +249,7 @@ public class MapsActivity extends AppCompatActivity implements
 
                     return false;
                 }
-            });
+            });*/
         } catch (SecurityException e) {
             e.printStackTrace();
         }
@@ -245,6 +258,7 @@ public class MapsActivity extends AppCompatActivity implements
         Jdbc jdbc = new Jdbc();
 
         jdbc.queryTable();
+
         //jdbc.insertTable("Tainan Stadium", "0.0", "0.0", "0", "2", "2", "2", "0", "free");
     }
 
@@ -503,6 +517,8 @@ public class MapsActivity extends AppCompatActivity implements
                 break;
             case R.id.action_locate:
                 Intent intent = new Intent(MapsActivity.this, AddCourt.class);
+                intent.putExtra("longitude", longitude);
+                intent.putExtra("latitude", latitude);
                 startActivity(intent);
                 break;
             default:
