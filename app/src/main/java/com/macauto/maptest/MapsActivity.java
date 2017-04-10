@@ -3,8 +3,11 @@ package com.macauto.maptest;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.SearchManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -42,7 +45,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.macauto.maptest.Data.Constants;
 import com.macauto.maptest.Data.LocationPager;
+import com.macauto.maptest.Data.PageItem;
 import com.macauto.maptest.Sql.Jdbc;
 
 
@@ -70,6 +75,7 @@ public class MapsActivity extends AppCompatActivity implements
     private static GoogleApiClient mGoogleApiClient;
 
     private static LocationManager mLocationManager;
+    private Context context;
 
     SupportMapFragment mapFrag;
     LocationRequest mLocationRequest;
@@ -87,7 +93,8 @@ public class MapsActivity extends AppCompatActivity implements
 
     List<Marker> mMarkers = new ArrayList<>();
 
-    LocationPager adapter;
+    //LocationPager adapter;
+    public static LocationPager pageAdapter = null;
     private ViewPager viewPager;
 
     public static String[] rank;
@@ -103,10 +110,20 @@ public class MapsActivity extends AppCompatActivity implements
     private static double longitude = 0.0;
     private static double latitude = 0.0;
 
+    public static ArrayList<PageItem> myCourtList = new ArrayList<>();
+
+    private static BroadcastReceiver mReceiver = null;
+    private static boolean isRegister = false;
+    Jdbc jdbc;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        context = getBaseContext();
+
+        IntentFilter filter;
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             Log.d(TAG, "No need to ask permmision");
@@ -117,15 +134,22 @@ public class MapsActivity extends AppCompatActivity implements
             }
         }
 
-        rank = new String[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+        //testDB();
+        jdbc = new Jdbc(context);
 
-        country = new String[] { "China", "India", "United States",
-                "Indonesia", "Brazil", "Pakistan", "Nigeria", "Bangladesh",
-                "Russia", "Japan" };
+        jdbc.queryTable();
 
-        population = new String[] { "1,354,040,000", "1,210,193,422",
-                "315,761,000", "237,641,326", "193,946,886", "182,912,000",
-                "170,901,000", "152,518,015", "143,369,806", "127,360,000" };
+
+
+        //rank = new String[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+
+        //country = new String[] { "China", "India", "United States",
+        //        "Indonesia", "Brazil", "Pakistan", "Nigeria", "Bangladesh",
+        //        "Russia", "Japan" };
+
+        //population = new String[] { "1,354,040,000", "1,210,193,422",
+        //        "315,761,000", "237,641,326", "193,946,886", "182,912,000",
+        //        "170,901,000", "152,518,015", "143,369,806", "127,360,000" };
 
         viewPager = (ViewPager) findViewById(R.id.view_pager);
         viewDrawer = findViewById(R.id.view1);
@@ -147,37 +171,110 @@ public class MapsActivity extends AppCompatActivity implements
             }
         });
 
-        adapter = new LocationPager(this);
 
 
 
-        viewPager.setAdapter(adapter);
-
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+        mReceiver = new BroadcastReceiver() {
             @Override
-            public void onPageSelected(int position) {
-                Log.i(TAG, "onPageSelected = "+position);
-                currentPage = position;
-            }
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                // not needed
-            }
-            @Override
-            public void onPageScrollStateChanged(int state) {
-                if (state == ViewPager.SCROLL_STATE_IDLE) {
-                    int pageCount = rank.length+2;
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equalsIgnoreCase(Constants.ACTION.GET_COURT_INFO_COMPLETE)) {
+                    Log.d(TAG, "receive brocast !");
 
-                    if (currentPage == pageCount-1){
-                        viewPager.setCurrentItem(1,false);
-                    } else if (currentPage == 0){
-                        viewPager.setCurrentItem(pageCount-2,false);
+                    if (myCourtList.size() > 0) {
+
+                        if (pageAdapter == null) {
+                            Log.d(TAG, "pageAdapter = null");
+                            pageAdapter = new LocationPager(context, myCourtList);
+                            viewPager.setAdapter(pageAdapter);
+
+                            viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+                                @Override
+                                public void onPageSelected(int position) {
+                                    Log.i(TAG, "onPageSelected = " + position);
+                                    currentPage = position;
+                                }
+
+                                @Override
+                                public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                                    // not needed
+                                }
+
+                                @Override
+                                public void onPageScrollStateChanged(int state) {
+                                    if (state == ViewPager.SCROLL_STATE_IDLE) {
+                                        int pageCount = myCourtList.size() + 2;
+
+                                        if (currentPage == pageCount - 1) {
+                                            viewPager.setCurrentItem(1, false);
+                                        } else if (currentPage == 0) {
+                                            viewPager.setCurrentItem(pageCount - 2, false);
+                                        }
+                                    }
+                                }
+                            });
+                        } else {
+                            Log.d(TAG, "pageAdapter not null");
+                            pageAdapter.notifyDataSetChanged();
+                        }
                     }
+
+
+
+                    /*viewPager.setAdapter(adapter);
+
+                    viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+                        @Override
+                        public void onPageSelected(int position) {
+                            Log.i(TAG, "onPageSelected = "+position);
+                            currentPage = position;
+                        }
+                        @Override
+                        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                            // not needed
+                        }
+                        @Override
+                        public void onPageScrollStateChanged(int state) {
+                            if (state == ViewPager.SCROLL_STATE_IDLE) {
+                                int pageCount = rank.length+2;
+
+                                if (currentPage == pageCount-1){
+                                    viewPager.setCurrentItem(1,false);
+                                } else if (currentPage == 0){
+                                    viewPager.setCurrentItem(pageCount-2,false);
+                                }
+                            }
+                        }
+                    });*/
+
+
                 }
             }
-        });
+        };
 
+        if (!isRegister) {
+            filter = new IntentFilter();
+            filter.addAction(Constants.ACTION.GET_COURT_INFO_COMPLETE);
+            registerReceiver(mReceiver, filter);
+            isRegister = true;
+            Log.d(TAG, "registerReceiver mReceiver");
+        }
+    }
 
+    @Override
+    public void onDestroy() {
+        Log.i(TAG, "onDestroy");
+
+        if (isRegister && mReceiver != null) {
+            try {
+                unregisterReceiver(mReceiver);
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+            isRegister = false;
+            mReceiver = null;
+        }
+
+        super.onDestroy();
     }
 
     @Override
@@ -188,6 +285,17 @@ public class MapsActivity extends AppCompatActivity implements
         if (mGoogleApiClient != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         }
+    }
+
+    @Override
+    public void onResume() {
+
+        Log.i(TAG, "onResume");
+
+        jdbc.queryTable();
+
+
+        super.onResume();
     }
 
     public void init_mapFragment() {
@@ -255,9 +363,9 @@ public class MapsActivity extends AppCompatActivity implements
         }
 
         //testDB();
-        Jdbc jdbc = new Jdbc();
+        //Jdbc jdbc = new Jdbc();
 
-        jdbc.queryTable();
+        //jdbc.queryTable();
 
         //jdbc.insertTable("Tainan Stadium", "0.0", "0.0", "0", "2", "2", "2", "0", "free");
     }

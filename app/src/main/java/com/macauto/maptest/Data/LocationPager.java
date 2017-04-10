@@ -12,7 +12,10 @@ import android.widget.TextView;
 
 import com.macauto.maptest.R;
 
+import java.util.ArrayList;
+
 import static com.macauto.maptest.MapsActivity.country;
+
 import static com.macauto.maptest.MapsActivity.population;
 import static com.macauto.maptest.MapsActivity.rank;
 
@@ -21,18 +24,33 @@ public class LocationPager extends PagerAdapter {
     private static final String TAG = LocationPager.class.getName();
 
     Context context;
-    LayoutInflater inflater;
+    //LayoutInflater inflater;
 
-    public LocationPager(Context context) {
+    private LayoutInflater inflater = null;
+
+    private int layoutResourceId;
+    private ArrayList<PageItem> items = new ArrayList<>();
+
+    public LocationPager(Context context,
+                         ArrayList<PageItem> objects) {
+        //super(context, textViewResourceId, objects);
         this.context = context;
+
+        this.items = objects;
+        //inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+
     }
 
     @Override
     public int getCount() {
-        return rank.length+2;
+        return items.size()+2;
     }
 
-
+    public PageItem getItem(int position)
+    {
+        return items.get(position);
+    }
 
     @Override
     public boolean isViewFromObject(View view, Object object) {
@@ -59,24 +77,31 @@ public class LocationPager extends PagerAdapter {
         textViewName = (TextView) itemView.findViewById(R.id.textView1);
         textViewCharge = (TextView) itemView.findViewById(R.id.textView2);
         textViewMaintain = (TextView) itemView.findViewById(R.id.textView3);
+        imgPic = (ImageView) itemView.findViewById(R.id.imgViewPic);
 
         // Capture position and set to the TextViews
 
-        if (position == getCount() - 1) {
-            Log.d(TAG, "<last>");
-            textViewName.setText(rank[0]);
-            textViewCharge.setText(country[0]);
-            textViewMaintain.setText(population[0]);
-        } else if (position == 0) {
-            Log.d(TAG, "<first>");
-            textViewName.setText(rank[rank.length-1]);
-            textViewCharge.setText(country[country.length-1]);
-            textViewMaintain.setText(population[population.length-1]);
-        } else {
-            Log.d(TAG, "<normal>");
-            textViewName.setText(rank[position-1]);
-            textViewCharge.setText(country[position-1]);
-            textViewMaintain.setText(population[position-1]);
+        if (items.size() > 0) {
+
+            if (position == getCount() - 1) {
+                Log.d(TAG, "<last>");
+                imgPic.setImageBitmap(items.get(0).getPic());
+                textViewName.setText(items.get(0).getName());
+                textViewCharge.setText(items.get(0).getCharge());
+                //textViewMaintain.setText(items.get(0).getCourt_usage());
+            } else if (position == 0) {
+                Log.d(TAG, "<first>");
+                imgPic.setImageBitmap(items.get(items.size() - 1).getPic());
+                textViewName.setText(items.get(items.size() - 1).getName());
+                textViewCharge.setText(items.get(items.size() - 1).getCharge());
+                //textViewMaintain.setText(items.get(items.size() - 1).getCourt_usage());
+            } else {
+                Log.d(TAG, "<normal>");
+                imgPic.setImageBitmap(items.get(position - 1).getPic());
+                textViewName.setText(items.get(position - 1).getName());
+                textViewCharge.setText(items.get(position - 1).getCharge());
+                //textViewMaintain.setText(items.get(position - 1).getCourt_usage());
+            }
         }
 
 

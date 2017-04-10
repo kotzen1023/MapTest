@@ -2,9 +2,15 @@ package com.macauto.maptest.Sql;
 
 
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.macauto.maptest.Data.Constants;
+import com.macauto.maptest.Data.PageItem;
 import com.mysql.jdbc.exceptions.*;
 
 import java.sql.Blob;
@@ -14,6 +20,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import static com.macauto.maptest.MapsActivity.myCourtList;
 
 public class Jdbc {
     private static final String TAG = Jdbc.class.getName();
@@ -31,9 +39,11 @@ public class Jdbc {
             "values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static String querydbSQL = "select * from court ";
+    private static Context context;
 
-    public Jdbc() {
+    public Jdbc(Context context) {
         Log.d(TAG, "Jdbc create");
+        this.context = context;
 
         /*new Thread() {
             public void run() {
@@ -112,6 +122,8 @@ public class Jdbc {
 
     public static void queryTable() {
 
+        myCourtList.clear();
+
         new Thread() {
             public void run() {
                 Log.d(TAG, "=== queryTable start ===");
@@ -132,6 +144,7 @@ public class Jdbc {
                         //name, longitude ,latitude, type, court_num, maintenance, rate, night_play, charge
                         while(rs.next())
                         {
+
                             Log.d(TAG, ""+rs.getString("name")+", "+
                                     rs.getDouble("longitude")+", "+
                                     rs.getDouble("latitude")+", "+
@@ -139,10 +152,28 @@ public class Jdbc {
                                     rs.getInt("court_usage")+", "+
                                     rs.getInt("light")+", "+
                                     rs.getInt("court_num")+", "+
-                                    rs.getInt("charge")+", "+
-                                    rs.getString("maintenance")+", "+
-                                    rs.getInt("traffic")+", "+
-                                    rs.getInt("parking"));
+                                    rs.getString("charge")+", "+
+                                    rs.getFloat("maintenance")+", "+
+                                    rs.getFloat("traffic")+", "+
+                                    rs.getFloat("parking"));
+
+                            PageItem item = new PageItem();
+                            item.setName(rs.getString("name"));
+                            item.setLongitude(rs.getDouble("longitude"));
+                            item.setLatitude(rs.getDouble("latitude"));
+                            item.setType(rs.getInt("type"));
+                            item.setCourt_usage((byte) rs.getInt("court_usage"));
+                            item.setLight((byte) rs.getInt("light"));
+                            item.setCourt_num(rs.getInt("court_num"));
+                            item.setCharge(rs.getString("charge"));
+                            item.setMaintenance(rs.getFloat("maintenance"));
+                            item.setTraffic(rs.getFloat("traffic"));
+                            item.setParking(rs.getFloat("parking"));
+                            Blob blob = rs.getBlob("pic");
+                            Bitmap bp = BitmapFactory.decodeStream(blob.getBinaryStream());
+                            item.setPic(bp);
+
+                            myCourtList.add(item);
 
                         }
                         Log.d(TAG, "=== Data Read ===");
@@ -157,6 +188,8 @@ public class Jdbc {
                     }
                 }
 
+                Intent newNotifyIntent = new Intent(Constants.ACTION.GET_COURT_INFO_COMPLETE);
+                context.sendBroadcast(newNotifyIntent);
                 Log.d(TAG, "=== queryTable end ===");
             }
         }.start();
@@ -210,6 +243,7 @@ public class Jdbc {
                     }
                 }
                 Log.d(TAG, "=== insertTable end ===");
+
             }
         }.start();
 
@@ -300,6 +334,8 @@ public class Jdbc {
         protected void onPostExecute(String result) {
 
             super.onPostExecute(result);
+
+            //send broadcast
 
             //loadDialog.dismiss();
             /*btnDecrypt.setVisibility(View.INVISIBLE);
