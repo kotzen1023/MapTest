@@ -9,11 +9,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -45,15 +47,24 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.macauto.maptest.Data.Constants;
+
 import com.macauto.maptest.Data.LocationPager;
 import com.macauto.maptest.Data.PageItem;
 import com.macauto.maptest.Sql.Jdbc;
 
 
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
 
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 
 import java.util.HashMap;
@@ -114,7 +125,12 @@ public class MapsActivity extends AppCompatActivity implements
 
     private static BroadcastReceiver mReceiver = null;
     private static boolean isRegister = false;
-    Jdbc jdbc;
+    private Jdbc jdbc;
+    private boolean is_permmision = false;
+
+    //private MarkerOptions options = new MarkerOptions();
+    //private ArrayList<LatLng> latlngs = new ArrayList<>();
+    private ArrayList<Marker> markerList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,33 +141,8 @@ public class MapsActivity extends AppCompatActivity implements
 
         IntentFilter filter;
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            Log.d(TAG, "No need to ask permmision");
-        } else {
-            if(checkAndRequestPermissions()) {
-                // carry on the normal flow, as the case of  permissions  granted.
-                init_mapFragment();
-            }
-        }
-
-        //testDB();
-        jdbc = new Jdbc(context);
-
-        jdbc.queryTable();
-
-
-
-        //rank = new String[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
-
-        //country = new String[] { "China", "India", "United States",
-        //        "Indonesia", "Brazil", "Pakistan", "Nigeria", "Bangladesh",
-        //        "Russia", "Japan" };
-
-        //population = new String[] { "1,354,040,000", "1,210,193,422",
-        //        "315,761,000", "237,641,326", "193,946,886", "182,912,000",
-        //        "170,901,000", "152,518,015", "143,369,806", "127,360,000" };
-
         viewPager = (ViewPager) findViewById(R.id.view_pager);
+
         viewDrawer = findViewById(R.id.view1);
         linearLayout = (LinearLayout) findViewById(R.id.viewPagerLaylout);
         imageView = (ImageView) findViewById(R.id.imgDraw);
@@ -170,6 +161,41 @@ public class MapsActivity extends AppCompatActivity implements
                 }
             }
         });
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            Log.d(TAG, "No need to ask permmision");
+
+            is_permmision = true;
+            init_mapFragment();
+            init_view_pager();
+
+        } else {
+            if(checkAndRequestPermissions()) {
+                is_permmision = true;
+                // carry on the normal flow, as the case of  permissions  granted.
+                init_mapFragment();
+                init_view_pager();
+            }
+        }
+
+        //testDB();
+
+
+
+
+        //rank = new String[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+
+        //country = new String[] { "China", "India", "United States",
+        //        "Indonesia", "Brazil", "Pakistan", "Nigeria", "Bangladesh",
+        //        "Russia", "Japan" };
+
+        //population = new String[] { "1,354,040,000", "1,210,193,422",
+        //        "315,761,000", "237,641,326", "193,946,886", "182,912,000",
+        //        "170,901,000", "152,518,015", "143,369,806", "127,360,000" };
+
+        //viewPager = (ViewPager) findViewById(R.id.view_pager);
+
+
 
 
 
@@ -192,6 +218,27 @@ public class MapsActivity extends AppCompatActivity implements
                                 public void onPageSelected(int position) {
                                     Log.i(TAG, "onPageSelected = " + position);
                                     currentPage = position;
+                                    Marker marker;
+
+
+                                    if (myCourtList.size() > 0) {
+                                        LatLng location;
+                                        if (position > myCourtList.size()) {
+                                            location = new LatLng(myCourtList.get(0).getLatitude(), myCourtList.get(0).getLongitude());
+                                            marker = markerList.get(0);
+                                        } else {
+                                            location = new LatLng(myCourtList.get(currentPage - 1).getLatitude(), myCourtList.get(currentPage - 1).getLongitude());
+                                            marker = markerList.get(currentPage -1);
+                                        }
+
+                                        mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(location));
+                                        mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(15));
+                                        marker.showInfoWindow();
+
+
+
+
+                                    }
                                 }
 
                                 @Override
@@ -215,6 +262,27 @@ public class MapsActivity extends AppCompatActivity implements
                         } else {
                             Log.d(TAG, "pageAdapter not null");
                             pageAdapter.notifyDataSetChanged();
+                        }
+
+                        markerList.clear();
+
+                        for (int i = 0; i<myCourtList.size(); i++) {
+                            Log.d(TAG, "Add marker: "+myCourtList.get(i).getLongitude()+" "+myCourtList.get(i).getLatitude());
+                            LatLng location = new LatLng(myCourtList.get(i).getLatitude(), myCourtList.get(i).getLongitude());
+                            Marker marker = mGoogleMap.addMarker(new MarkerOptions()
+                                    .position(location)
+                                    .title(myCourtList.get(i).getName()));
+
+
+
+                            marker.setTag(0);
+                            markerList.add(marker);
+
+                            //latlngs.add(new LatLng(myCourtList.get(i).getLongitude(), myCourtList.get(i).getLatitude()));
+                            //mGoogleMap.addMarker(new MarkerOptions()
+                            //        .position(new LatLng(myCourtList.get(i).getLongitude(), myCourtList.get(i).getLatitude()))
+                            //        .title(myCourtList.get(i).getName()));
+
                         }
                     }
 
@@ -292,7 +360,8 @@ public class MapsActivity extends AppCompatActivity implements
 
         Log.i(TAG, "onResume");
 
-        jdbc.queryTable();
+        if (is_permmision)
+            jdbc.queryTable();
 
 
         super.onResume();
@@ -305,7 +374,11 @@ public class MapsActivity extends AppCompatActivity implements
         mapFragment.getMapAsync(this);
     }
 
+    public void init_view_pager() {
+        jdbc = new Jdbc(context);
 
+        //jdbc.queryTable();
+    }
 
     /**
      * Manipulates the map once available.
@@ -337,6 +410,9 @@ public class MapsActivity extends AppCompatActivity implements
             } else {
                 Log.d(TAG, "location = null");
             }
+
+            //LatLng sydney = new LatLng(22.631392, 120.301803);
+            //mGoogleMap.addMarker(new MarkerOptions().position(sydney).title("捷運美麗島站"));
 
             /*mGoogleMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
                 @Override
@@ -540,8 +616,9 @@ public class MapsActivity extends AppCompatActivity implements
                     && perms.get(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
                     {
                         Log.d(TAG, "all permission granted");
+                        is_permmision = true;
                         init_mapFragment();
-
+                        init_view_pager();
 
 
 
